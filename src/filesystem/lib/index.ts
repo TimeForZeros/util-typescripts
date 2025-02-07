@@ -1,7 +1,7 @@
 import path from 'path';
 import fs from 'fs-extra';
 
-const getDirContents = async (
+const getDirContentPaths = async (
   dir: string,
 ): Promise<{ files: string[]; directories: string[] }> => {
   const files = await fs.readdir(dir);
@@ -22,12 +22,12 @@ const getDirContents = async (
   }
   return result;
 };
-const getAllFiles = async (dir: string): Promise<string[]> => {
+const getAllFilePaths = async (dir: string): Promise<string[]> => {
   console.log(console.log(`Getting all files in directory: ${dir}`));
-  const { files, directories } = await getDirContents(dir);
+  const { files, directories } = await getDirContentPaths(dir);
   console.log(`Found ${files.length} files and ${directories.length} directories`);
   const result: string[] = [...files];
-  (await Promise.all(directories.map(getAllFiles))).forEach((res) => {
+  (await Promise.all(directories.map(getAllFilePaths))).forEach((res) => {
     result.push(...res);
   });
   console.log(`Found ${result.length} files in total`);
@@ -48,7 +48,7 @@ const ensureEmptyDir = async (dir: string): Promise<boolean> => {
 };
 
 const removeEmptyDirs = async (dir: string) => {
-  const { directories } = await getDirContents(dir);
+  const { directories } = await getDirContentPaths(dir);
   await Promise.all(
     directories.map(async (dir): Promise<void> => {
       if (!(await ensureEmptyDir(dir))) return;
@@ -56,11 +56,13 @@ const removeEmptyDirs = async (dir: string) => {
       await fs.remove(dir);
     }),
   );
+  console.log(`Removed empty directories in: ${dir}`);
 };
 
+// all levels
 const flattenDir = async (dir: string, cleanup: boolean) => {
   console.log(`Flattening directory: ${dir}`);
-  const files = await getAllFiles(dir);
+  const files = await getAllFilePaths(dir);
   for (const file of files) {
     const newPath = path.join(dir, path.basename(file));
     if (file !== newPath) {
@@ -68,16 +70,42 @@ const flattenDir = async (dir: string, cleanup: boolean) => {
       await fs.move(file, newPath);
     }
   }
-  if (cleanup) {
-    const { directories } = await getDirContents(dir);
-    await Promise.all(
-      directories.map((dir) => {
-        console.log(`Removing empty directory: ${dir}`);
-        return fs.remove(dir);
-      }),
-    );
-  }
+  if (cleanup) await removeEmptyDirs(dir);
   console.log(`Flattened directory: ${dir}`);
 };
 
-export { getDirContents, getAllFiles, flattenDir };
+// single level
+const moveContentsToParent = async (dir: string) => {
+  const parentDir = path.dirname(dir);
+  const { files, directories } = await getDirContentPaths(dir);
+  const moveToParent = async (contentPath: string) => {
+    const newPath = path.join(parentDir, path.basename(contentPath));
+    console.log(`Moving ${path.basename(contentPath)} to ${newPath}`);
+    await fs.move(contentPath, newPath);
+  }
+  for (const filePath of files) {
+    await moveToParent(filePath);
+  }
+  for (const nestedDir of directories) {
+    await moveToParent(nestedDir);
+  }
+  if (await ensureEmptyDir(dir)) {
+    console.log(`Removing empty directory: ${dir}`);
+    await fs.remove(dir);
+  }
+}
+const findDuplicateNestedDir = async (dir: string, flatten: boolean) => {
+  const { directories } = await getDirContentPaths(dir);
+  if (!directories.length) return;
+  for (const nestedDir of directories) {
+    const nestedDirName = path.basename(nestedDir);
+    if (nestedDirName === path.basename(dir)) {
+      console.log(`Found duplicate nested directory: ${nestedDir}`);
+      if (flatten) await moveContentsToParent(dir);
+    } else {
+      await findDuplicateNestedDir(nestedDir, flatten);
+    }
+  }
+}
+
+export { getDirContentPaths, getAllFilePaths, flattenDir };
