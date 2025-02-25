@@ -2,7 +2,7 @@ import crypto from 'crypto';
 import { getDirContentPaths, generateHashFromFile } from './lib/index.js';
 import { Command } from 'commander';
 import fs from 'fs-extra';
-import path, { parse } from 'path';
+import path from 'path';
 
 const program = new Command();
 
