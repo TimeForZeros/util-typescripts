@@ -1,21 +1,10 @@
 import crypto from 'crypto';
-import { getDirContentPaths } from './lib/index.js';
+import { getDirContentPaths, generateHashFromFile } from './lib/index.js';
 import { Command } from 'commander';
 import fs from 'fs-extra';
 import path, { parse } from 'path';
 
 const program = new Command();
-
-const generateHashFromFile = async (filePath: string) =>
-  new Promise((resolve, reject) => {
-    const hash = crypto.createHash('md5');
-    const readStream = fs.createReadStream(filePath);
-    readStream.on('data', (data) => {
-      hash.update(data);
-    });
-    readStream.on('close', () => resolve(hash.digest('hex')));
-    readStream.on('error', reject);
-  });
 
 program
   .command('dir <dirPath>')

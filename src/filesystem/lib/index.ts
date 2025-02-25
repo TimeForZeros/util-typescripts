@@ -1,5 +1,6 @@
 import path from 'path';
 import fs from 'fs-extra';
+import crypto from 'crypto';
 
 const getDirContentPaths = async (
   dir: string,
@@ -108,4 +109,15 @@ const findDuplicateNestedDir = async (dir: string, flatten: boolean) => {
   }
 }
 
-export { getDirContentPaths, getAllFilePaths, flattenDir };
+const generateHashFromFile = async (filePath: string) =>
+  new Promise((resolve, reject) => {
+    const hash = crypto.createHash('md5');
+    const readStream = fs.createReadStream(filePath);
+    readStream.on('data', (data) => {
+      hash.update(data);
+    });
+    readStream.on('close', () => resolve(hash.digest('hex')));
+    readStream.on('error', reject);
+  });
+
+export { getDirContentPaths, getAllFilePaths, flattenDir, generateHashFromFile };
