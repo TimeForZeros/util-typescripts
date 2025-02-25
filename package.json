@@ -13,6 +13,7 @@
   "description": "",
   "dependencies": {
     "commander": "^13.1.0",
+    "crypto": "^1.0.1",
     "fs-extra": "^11.3.0"
   },
   "devDependencies": {
