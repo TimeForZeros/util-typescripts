@@ -13,7 +13,7 @@ program
     const { files } = await getDirContentPaths(dirPath);
     const outputFilePath = outputFile
       ? outputFile
-      : path.join(dirPath, '_hashes.json');
+      : path.join(dirPath, '._hashes.json');
     let hashList = await Promise.all(
       files.filter((file) => file !== outputFilePath).map(generateHashFromFile),
     );
