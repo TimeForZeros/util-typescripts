@@ -26,7 +26,9 @@ const getDirContentPaths = async (
 const getAllFilePaths = async (dir: string): Promise<string[]> => {
   console.log(console.log(`Getting all files in directory: ${dir}`));
   const { files, directories } = await getDirContentPaths(dir);
-  console.log(`Found ${files.length} files and ${directories.length} directories`);
+  console.log(
+    `Found ${files.length} files and ${directories.length} directories`,
+  );
   const result: string[] = [...files];
   (await Promise.all(directories.map(getAllFilePaths))).forEach((res) => {
     result.push(...res);
@@ -48,7 +50,7 @@ const ensureEmptyDir = async (dir: string): Promise<boolean> => {
   return true;
 };
 
-const removeEmptyDirs = async (dir: string) => {
+const removeEmptyDirs = async (dir: string): Promise<void> => {
   const { directories } = await getDirContentPaths(dir);
   await Promise.all(
     directories.map(async (dir): Promise<void> => {
@@ -61,7 +63,7 @@ const removeEmptyDirs = async (dir: string) => {
 };
 
 // all levels
-const flattenDir = async (dir: string, cleanup: boolean) => {
+const flattenDir = async (dir: string, cleanup: boolean): Promise<void> => {
   console.log(`Flattening directory: ${dir}`);
   const files = await getAllFilePaths(dir);
   for (const file of files) {
@@ -76,14 +78,14 @@ const flattenDir = async (dir: string, cleanup: boolean) => {
 };
 
 // single level
-const moveContentsToParent = async (dir: string) => {
+const moveContentsToParent = async (dir: string): Promise<void> => {
   const parentDir = path.dirname(dir);
   const { files, directories } = await getDirContentPaths(dir);
   const moveToParent = async (contentPath: string) => {
     const newPath = path.join(parentDir, path.basename(contentPath));
     console.log(`Moving ${path.basename(contentPath)} to ${newPath}`);
     await fs.move(contentPath, newPath);
-  }
+  };
   for (const filePath of files) {
     await moveToParent(filePath);
   }
@@ -94,7 +96,7 @@ const moveContentsToParent = async (dir: string) => {
     console.log(`Removing empty directory: ${dir}`);
     await fs.remove(dir);
   }
-}
+};
 const findDuplicateNestedDir = async (dir: string, flatten: boolean) => {
   const { directories } = await getDirContentPaths(dir);
   if (!directories.length) return;
@@ -107,9 +109,9 @@ const findDuplicateNestedDir = async (dir: string, flatten: boolean) => {
       await findDuplicateNestedDir(nestedDir, flatten);
     }
   }
-}
+};
 
-const generateHashFromFile = async (filePath: string) =>
+const generateHashFromFile = async (filePath: string): Promise<string> =>
   new Promise((resolve, reject) => {
     const hash = crypto.createHash('md5');
     const readStream = fs.createReadStream(filePath);
@@ -120,4 +122,9 @@ const generateHashFromFile = async (filePath: string) =>
     readStream.on('error', reject);
   });
 
-export { getDirContentPaths, getAllFilePaths, flattenDir, generateHashFromFile };
+export {
+  getDirContentPaths,
+  getAllFilePaths,
+  flattenDir,
+  generateHashFromFile,
+};
