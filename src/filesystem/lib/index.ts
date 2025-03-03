@@ -1,6 +1,7 @@
 import path from 'path';
 import fs from 'fs-extra';
 import crypto from 'crypto';
+import ffmpeg, { FfprobeData } from 'fluent-ffmpeg';
 
 const getDirContentPaths = async (
   dir: string,
@@ -122,9 +123,33 @@ const generateHashFromFile = async (filePath: string): Promise<string> =>
     readStream.on('error', reject);
   });
 
+const appendHash = async (filePath: string) => {
+  const hash = await generateHashFromFile(filePath);
+  const basename = path.basename(filePath);
+  const ext = path.extname(basename);
+  const hashExt = `_hash:${hash.substring(0, 8)}${ext}`;
+  return filePath.replace(basename, basename.replace(ext, hashExt));
+};
+
+const appendCodec = async (filePath: string) => {
+  const videoData: FfprobeData = await new Promise((resolve, reject) =>
+    ffmpeg.ffprobe(filePath, (err, data) =>
+      err ? reject(err) : resolve(data),
+    ),
+  );
+  const codec = videoData.streams.find((stream) => stream.codec_type === 'video')?.codec_name;
+  if (!codec) throw new Error('file has no codec data');
+  const basename = path.basename(filePath);
+  const ext = path.extname(filePath);
+  const codecExt = `_codec:${codec}${ext}`;
+  return filePath.replace(basename, basename.replace(ext, codecExt));
+};
+
 export {
   getDirContentPaths,
   getAllFilePaths,
   flattenDir,
   generateHashFromFile,
+  appendHash,
+  appendCodec,
 };
