@@ -2,7 +2,7 @@ import { fileTypeFromFile } from 'file-type';
 import { program } from 'commander';
 import path from 'path';
 import fs from 'fs-extra';
-import { getDirContentPaths, generateHashFromFile } from './lib/index.js';
+import { getAllFilePaths, generateHashFromFile } from './lib/index.js';
 
 const getFileTypePathName = async (filePath: string): Promise<string> => {
   const fileType = await fileTypeFromFile(filePath);
@@ -37,7 +37,7 @@ async function setFileType(
   dir: string,
   { dryRun = false }: { dryRun: boolean },
 ) {
-  const { files, directories } = await getDirContentPaths(dir);
+  const files = await getAllFilePaths(dir);
   if (!files.length) {
     console.log('No files to consider');
   }
