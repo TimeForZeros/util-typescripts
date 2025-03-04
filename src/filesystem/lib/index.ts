@@ -3,9 +3,34 @@ import fs from 'fs-extra';
 import crypto from 'crypto';
 import ffmpeg, { FfprobeData } from 'fluent-ffmpeg';
 
-const getDirContentPaths = async (
-  dir: string,
-): Promise<{ files: string[]; directories: string[] }> => {
+function generateRandomString(length: number) {
+  return crypto
+    .randomBytes(Math.ceil(length / 2))
+    .toString('hex')
+    .slice(0, length);
+}
+
+const appendBeforeExt = (filePath: string, append: string) => {
+  const basename = path.basename(filePath);
+  const ext = path.extname(filePath);
+  const appendedExt = `${append}${ext}`;
+  const newFileName = basename.replace(ext, appendedExt);
+  return filePath.replace(basename, newFileName);
+};
+
+const moveFile = async (source: string, destination: string) => {
+  try {
+    await fs.move(source, destination);
+  } catch (err: any) {
+    if (err.message !== 'dest already exists.') throw err;
+    console.log('destination already exists, adding hash to filename');
+    const hash = `-${generateRandomString(4)}`;
+    const newDest = appendBeforeExt(destination, hash);
+    return moveFile(source, newDest);
+  }
+};
+
+const getDirContentPaths = async (dir: string): Promise<{ files: string[]; directories: string[] }> => {
   const files = await fs.readdir(dir);
   const result: { files: string[]; directories: string[] } = {
     files: [],
@@ -18,31 +43,28 @@ const getDirContentPaths = async (
     }
     const filePath = path.join(dir, file);
     const stat = await fs.stat(filePath);
-    stat.isDirectory()
-      ? result.directories.push(filePath)
-      : result.files.push(filePath);
+    stat.isDirectory() ? result.directories.push(filePath) : result.files.push(filePath);
   }
   return result;
 };
-const getAllFilePaths = async (dir: string): Promise<string[]> => {
+const getAllFilePaths = async (dir: string, filterList?: string[]): Promise<string[]> => {
   console.log(console.log(`Getting all files in directory: ${dir}`));
   const { files, directories } = await getDirContentPaths(dir);
-  console.log(
-    `Found ${files.length} files and ${directories.length} directories`,
-  );
+  console.log(`Found ${files.length} files and ${directories.length} directories`);
   const result: string[] = [...files];
-  (await Promise.all(directories.map(getAllFilePaths))).forEach((res) => {
-    result.push(...res);
-  });
+  const dirs = filterList
+    ? directories.filter((directory) => !filterList.includes(directory))
+    : directories;
+  (await Promise.all(dirs.map((directory) => getAllFilePaths(directory, filterList)))).forEach((res) =>
+    result.push(...res),
+  );
   console.log(`Found ${result.length} files in total`);
   return result;
 };
 
 const ensureEmptyDir = async (dir: string): Promise<boolean> => {
   console.log(`Ensuring directory is empty: ${dir}`);
-  const files: string[] = (await fs.readdir(dir)).filter(
-    (file) => file !== '.DS_Store',
-  );
+  const files: string[] = (await fs.readdir(dir)).filter((file) => file !== '.DS_Store');
   if (files.length) {
     console.warn(`Directory ${dir} is not empty`);
     return false;
@@ -125,24 +147,16 @@ const generateHashFromFile = async (filePath: string): Promise<string> =>
 
 const appendHash = async (filePath: string) => {
   const hash = await generateHashFromFile(filePath);
-  const basename = path.basename(filePath);
-  const ext = path.extname(basename);
-  const hashExt = `_hash:${hash.substring(0, 8)}${ext}`;
-  return filePath.replace(basename, basename.replace(ext, hashExt));
+  return appendBeforeExt(filePath, `_hash:${hash.substring(0, 8)}`);
 };
 
 const appendCodec = async (filePath: string) => {
   const videoData: FfprobeData = await new Promise((resolve, reject) =>
-    ffmpeg.ffprobe(filePath, (err, data) =>
-      err ? reject(err) : resolve(data),
-    ),
+    ffmpeg.ffprobe(filePath, (err, data) => (err ? reject(err) : resolve(data))),
   );
   const codec = videoData.streams.find((stream) => stream.codec_type === 'video')?.codec_name;
   if (!codec) throw new Error('file has no codec data');
-  const basename = path.basename(filePath);
-  const ext = path.extname(filePath);
-  const codecExt = `_codec:${codec}${ext}`;
-  return filePath.replace(basename, basename.replace(ext, codecExt));
+  return appendBeforeExt(filePath, `_codec:${codec}`);
 };
 
 export {
@@ -152,4 +166,6 @@ export {
   generateHashFromFile,
   appendHash,
   appendCodec,
+  moveFile,
+  removeEmptyDirs,
 };
