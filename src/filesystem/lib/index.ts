@@ -147,7 +147,7 @@ const generateHashFromFile = async (filePath: string): Promise<string> =>
 
 const appendHash = async (filePath: string) => {
   const hash = await generateHashFromFile(filePath);
-  return appendBeforeExt(filePath, `_hash:${hash.substring(0, 8)}`);
+  return appendBeforeExt(filePath, `_hash-${hash.substring(0, 8)}`);
 };
 
 const appendCodec = async (filePath: string) => {

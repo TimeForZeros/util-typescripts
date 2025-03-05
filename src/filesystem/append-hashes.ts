@@ -8,7 +8,7 @@ program
   .command('dir <dir>')
   .option('--dry-run', 'dry run')
   .action(async (dir: string, { dryRun = false }: { dryRun: boolean }) => {
-    console.log(dir);
+    console.log(`appending hashes to the contents of ${dir}`)
     const { files } = await getDirContentPaths(dir);
     if (!files.length) {
       console.log('no files to consider');
