@@ -48,7 +48,7 @@ const getDirContentPaths = async (dir: string): Promise<{ files: string[]; direc
   return result;
 };
 const getAllFilePaths = async (dir: string, filterList?: string[]): Promise<string[]> => {
-  console.log(console.log(`Getting all files in directory: ${dir}`));
+  console.log(`Getting all files in directory: ${dir}`);
   const { files, directories } = await getDirContentPaths(dir);
   console.log(`Found ${files.length} files and ${directories.length} directories`);
   const result: string[] = [...files];
