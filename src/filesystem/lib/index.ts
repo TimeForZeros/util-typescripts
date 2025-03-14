@@ -52,9 +52,7 @@ const getAllFilePaths = async (dir: string, filterList?: string[]): Promise<stri
   const { files, directories } = await getDirContentPaths(dir);
   console.log(`Found ${files.length} files and ${directories.length} directories`);
   const result: string[] = [...files];
-  const dirs = filterList
-    ? directories.filter((directory) => !filterList.includes(directory))
-    : directories;
+  const dirs = filterList ? directories.filter((directory) => !filterList.includes(directory)) : directories;
   (await Promise.all(dirs.map((directory) => getAllFilePaths(directory, filterList)))).forEach((res) =>
     result.push(...res),
   );
@@ -120,14 +118,15 @@ const moveContentsToParent = async (dir: string): Promise<void> => {
     await fs.remove(dir);
   }
 };
-const findDuplicateNestedDir = async (dir: string, flatten: boolean) => {
+const findDuplicateNestedDir = async (dir: string, flatten: boolean = false) => {
   const { directories } = await getDirContentPaths(dir);
   if (!directories.length) return;
   for (const nestedDir of directories) {
     const nestedDirName = path.basename(nestedDir);
     if (nestedDirName === path.basename(dir)) {
       console.log(`Found duplicate nested directory: ${nestedDir}`);
-      if (flatten) await moveContentsToParent(dir);
+      if (!flatten) continue;
+      await moveContentsToParent(nestedDir);
     } else {
       await findDuplicateNestedDir(nestedDir, flatten);
     }
@@ -168,4 +167,5 @@ export {
   appendCodec,
   moveFile,
   removeEmptyDirs,
+  findDuplicateNestedDir,
 };
