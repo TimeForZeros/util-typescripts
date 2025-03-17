@@ -27,7 +27,7 @@ const renameFiles = async (dirPath: string, duplicateName: boolean) => {
     }
     const dirFile = dirFiles[i];
     const ext = path.extname(dirFile);
-    const newFileName = `${directoryName}_${String(count).padStart(padding, 0)}${ext}`.replace(' ', '-');
+    const newFileName = `${directoryName}_${String(count).padStart(padding, '0')}${ext}`.replace(' ', '-');
     const newPath = duplicateName ? path.join(path.dirname(dirPath), newFileName) : path.join(dirPath, newFileName);
     const oldPath = path.join(dirPath, dirFile);
     await fs.rename(oldPath, newPath);
@@ -40,7 +40,7 @@ const renameFiles = async (dirPath: string, duplicateName: boolean) => {
   }
 };
 
-const renameFilesToParentDirectoryName = async (directoryPath) => {
+const renameFilesToParentDirectoryName = async (directoryPath: string) => {
   const directoryName = path.basename(directoryPath);
   // Read the directory
   const files = (await fs.readdir(directoryPath)).filter((file) => file !== '.DS_Store');
