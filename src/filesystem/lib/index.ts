@@ -135,6 +135,7 @@ const findDuplicateNestedDir = async (dir: string, flatten: boolean = false) => 
 
 const generateHashFromFile = async (filePath: string): Promise<string> =>
   new Promise((resolve, reject) => {
+    console.log(`Generating hash for: ${filePath}`);
     const hash = crypto.createHash('md5');
     const readStream = fs.createReadStream(filePath);
     readStream.on('data', (data) => {
