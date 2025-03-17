@@ -14,6 +14,7 @@ program
       console.log('no files to consider');
       process.exit(0);
     }
+    let fileCount = files.length;
     for (const filePath of files) {
       if (filePath.includes('_hash-')) {
         console.log(`seems like ${path.basename(filePath)} already has a hash`);
@@ -21,8 +22,8 @@ program
       }
       const hashedPath = await appendHash(filePath);
       console.log(`renaming ${path.basename(filePath)} to ${hashedPath}`);
-      if (dryRun) continue;
-      await moveFile(filePath, hashedPath);
+      if (!dryRun) await moveFile(filePath, hashedPath);
+      console.log(`remaining files: ${--fileCount}`);
     }
     console.log('done');
   })
