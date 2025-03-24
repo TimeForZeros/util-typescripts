@@ -12,7 +12,9 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@types/cross-spawn": "^6.0.6",
     "commander": "^13.1.0",
+    "cross-spawn": "^7.0.6",
     "crypto": "^1.0.1",
     "debug": "^4.4.0",
     "file-type": "^20.4.0",
