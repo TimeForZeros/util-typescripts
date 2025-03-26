@@ -17,10 +17,14 @@ type batchOptions = {
 const stripDots = (str: string): string => str.replace(/\./g, '');
 
 const batchConvertImages = async (dir: string, options: batchOptions) => {
+  if (path.basename(dir).startsWith('_originals')) {
+    console.log(`skipping directory ${path.basename(dir)}`);
+    return;
+  }
   console.log(`converting images in ${path.basename(dir)}`);
   const { files, directories } = await getDirContentPaths(dir);
   const imageFiles = files.filter((file) => file.endsWith(options.extension));
-  const destinationDir = path.join(dir, `_converted-${options.extension}`);
+  const destinationDir = path.join(dir, `_originals-${options.extension}`);
   if (!imageFiles.length) {
     console.log(`no image files to consider with the extension ${options.extension}`);
     if (!options.recursive) return;
@@ -37,8 +41,7 @@ const batchConvertImages = async (dir: string, options: batchOptions) => {
       path.dirname(imageFile),
       `${path.basename(imageFile, options.extension)}${options.format}`,
     );
-    const imArgs = [imageFile, ...imOptions, '-monitor', destinationPath];
-    console.log(imArgs);
+    const imArgs = [imageFile, ...imOptions, destinationPath];
     await new Promise((resolve, reject) => {
       const child = spawn('magick', imArgs, { stdio: 'inherit' });
       child.on('error', reject);
@@ -49,6 +52,7 @@ const batchConvertImages = async (dir: string, options: batchOptions) => {
     console.log(`remaining files: ${fileCount}`);
   }
   if (options.deleteOriginals) {
+    console.log(`deleting original images in ${path.basename(destinationDir)}`);
     await fs.remove(destinationDir);
   }
   let dirCount = directories.length;
