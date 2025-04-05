@@ -9,6 +9,7 @@ const program = new Command();
 type batchOptions = {
   format: string;
   quality: string | undefined;
+  scale: string | undefined;
   extension: string;
   deleteOriginals: boolean;
   recursive: boolean;
@@ -36,6 +37,9 @@ const batchConvertImages = async (dir: string, options: batchOptions) => {
     const imOptions = [];
     if (options.quality && !Number.isNaN(Number(options.quality))) {
       imOptions.push('-quality', options.quality);
+    }
+    if (options.scale && !Number.isNaN(Number(options.scale.replace('%', '')))) {
+      imOptions.push('-scale', options.scale);
     }
     const destinationPath = path.join(
       path.dirname(imageFile),
@@ -68,6 +72,7 @@ program
   .command('batch-convert-images <dir>')
   .option('-r, --recursive', 'Recursively convert images in subdirectories')
   .option('-f, --format <format>', 'The output format', stripDots, 'avif')
+  .option('-s, --scale <scale>', 'the scale for the output relative to the original')
   .option('-q, --quality <quality>', 'The output quality')
   .option('-e, --extension <extension>', 'The input extension', stripDots, 'jpg')
   .option('-d, --delete-originals', 'Delete the original images after conversion', false)
