@@ -1,6 +1,6 @@
 import path from 'path';
 import { Command } from 'commander';
-import { generateHashFromFile, getAllFilePaths, moveFile } from './lib/index.js';
+import { generateHashFromFile, getAllFilePaths, moveFile } from '../lib/index.js';
 
 const program = new Command();
 
