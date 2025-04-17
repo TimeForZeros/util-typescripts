@@ -15,12 +15,13 @@ const getNumberStr = (fileName: string) => {
 };
 
 const renameToPadding = async (filePath: string, padLength: number) => {
-  const fileName = path.basename(filePath, path.extname(filePath));
+  const fileExt = path.extname(filePath);
+  const fileName = path.basename(filePath, fileExt);
   const numberStr = getNumberStr(fileName);
   if (!numberStr) return;
   const paddedNumber = numberStr.padStart(padLength, '0');
   const paddedName = fileName.replace(numberStr, paddedNumber);
-  const paddedPath = filePath.replace(fileName, paddedName);
+  const paddedPath = path.join(path.dirname(filePath), `${paddedName}${fileExt}`)
   if (paddedPath === filePath) return;
   console.log(`before: ${filePath}`);
   console.log(`after: ${paddedPath}`);
