@@ -5,6 +5,7 @@ import { program } from 'commander';
 program
   .argument('<directoryPath>', 'Directory that contains directory files to rename')
   .option('-a, --append-parent', 'Append parent directory name to the file name')
+  .option('-s, --skip-underscore', 'Skip files prepended with underscore')
   .parse();
 
 const dir = program.args[0];
@@ -17,15 +18,15 @@ const renameFiles = async (dirPath: string, duplicateName: boolean) => {
   if (dirLength === 0) return;
   const padding = dirLength.toString().length;
   let count = 1;
-  for (let i = 0; i < dirLength; i++) {
-    const currentPath = path.join(dirPath, dirFiles[i]);
+  for (const dirFile of dirFiles) {
+    const currentPath = path.join(dirPath, dirFile);
     const stat = await fs.stat(currentPath);
     if (stat.isDirectory()) {
       console.log('Renaming files in subdirectory:', currentPath);
-      await renameFiles(currentPath, directoryName === dirFiles[i]);
+      await renameFiles(currentPath, directoryName === dirFile);
       continue;
     }
-    const dirFile = dirFiles[i];
+    if (dirFile.startsWith('_')) continue;
     const ext = path.extname(dirFile);
     const newFileName = `${directoryName}_${String(count).padStart(padding, '0')}${ext}`.replace(' ', '-');
     const newPath = duplicateName ? path.join(path.dirname(dirPath), newFileName) : path.join(dirPath, newFileName);
