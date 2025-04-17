@@ -2,7 +2,7 @@ import { fileTypeFromFile } from 'file-type';
 import { program } from 'commander';
 import path from 'path';
 import fs from 'fs-extra';
-import { getAllFilePaths, moveFile } from './lib/index.js';
+import { moveFile } from './lib/index.js';
 
 const getFileTypePathName = async (filePath: string): Promise<string> => {
   const fileType = await fileTypeFromFile(filePath);
@@ -13,36 +13,45 @@ const getFileTypePathName = async (filePath: string): Promise<string> => {
   const oldExt = path.extname(filePath);
   const newExt = `.${fileType.ext}`;
   if (oldExt === `.${fileType.ext}`) {
-    console.log('extension does not require updating');
+    console.log(`extension does not require updating for: ${path.basename(filePath)}`);
     return '';
   }
   return filePath.replace(oldExt, newExt);
 };
 
-async function setFileType(
-  dir: string,
-  { dryRun = false }: { dryRun: boolean },
-) {
-  const files = await getAllFilePaths(dir);
-  if (!files.length) {
+type Options = {
+  dryRun: boolean;
+};
+
+const renameFileExtension = async (filePath: string, dryRun: boolean) => {
+  const newPath = await getFileTypePathName(filePath);
+  if (!newPath) return;
+  console.log(`${path.basename(filePath)} --> ${path.basename(newPath)}`);
+  if (dryRun) return;
+  try {
+    await moveFile(filePath, newPath);
+  } catch (err: any) {
+    console.error(err.message);
+  }
+};
+
+async function setFileType(dir: string, { dryRun = false }: Options) {
+  console.log(`checking directory ${dir}`);
+  const contents = await fs.readdir(dir);
+  const count = contents.length;
+  if (!count) {
     console.log('No files to consider');
   }
-  console.log('starting file setting')
-  // await Promise.all(
-  //   files.map(async (filePath) => {
-  for (const filePath of files) {
-      const newPath = await getFileTypePathName(filePath);
-      if (!newPath) continue;
-      console.log(`${path.basename(filePath)} --> ${path.basename(newPath)}`);
-      if (dryRun) continue;
-      try {
-        await moveFile(filePath, newPath);
-      } catch(err: any) {
-        console.error(err?.message);
-      }
+  const promiseArr = [];
+  for (const content of contents) {
+    const contentPath = path.join(dir, content);
+    if ((await fs.stat(contentPath)).isDirectory()) {
+      await setFileType(contentPath, { dryRun });
+    } else {
+      promiseArr.push(renameFileExtension(contentPath, dryRun));
     }
-    // }),
-  // );
+  }
+  await Promise.allSettled(promiseArr);
 }
 
 program
