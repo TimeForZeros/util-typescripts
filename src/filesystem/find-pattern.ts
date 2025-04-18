@@ -1,6 +1,5 @@
 import { getDirContentPaths } from './lib/index.js';
 import { Command } from 'commander';
-import path from 'path';
 
 const program = new Command();
 
