@@ -25,7 +25,7 @@ const batchConvertImages = async (dir: string, options: batchOptions) => {
   console.log(`converting images in ${path.basename(dir)}`);
   const { files, directories } = await getDirContentPaths(dir);
   const imageFiles = files.filter((file) => file.endsWith(options.extension));
-  const destinationDir = path.join(dir, `_originals-${options.extension}`);
+  const destinationDir = path.join(path.dirname(dir), `_originals-${options.extension}`, path.basename(dir));
   if (!imageFiles.length) {
     console.log(`no image files to consider with the extension ${options.extension}`);
     if (!options.recursive) return;
@@ -38,7 +38,11 @@ const batchConvertImages = async (dir: string, options: batchOptions) => {
     if (options.quality && !Number.isNaN(Number(options.quality))) {
       imOptions.push('-quality', options.quality);
     }
-    if (options.scale && !Number.isNaN(Number(options.scale.replace('%', '')))) {
+    if (
+      options.scale &&
+      !Number.isNaN(Number(options.scale.replace('%', ''))) &&
+      !path.basename(imageFile).startsWith('_')
+    ) {
       imOptions.push('-scale', options.scale);
     }
     const destinationPath = path.join(
