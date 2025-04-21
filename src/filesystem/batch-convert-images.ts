@@ -35,7 +35,9 @@ const batchConvertImages = async (dir: string, options: batchOptions) => {
   let fileCount = imageFiles.length;
   for (const imageFile of imageFiles) {
     const imOptions = [];
-    if (options.quality && !Number.isNaN(Number(options.quality))) {
+    if (path.basename(imageFile).startsWith('_')) {
+      imOptions.push('-quality', '80')
+    } else if (options.quality && !Number.isNaN(Number(options.quality))) {
       imOptions.push('-quality', options.quality);
     }
     if (
@@ -55,6 +57,7 @@ const batchConvertImages = async (dir: string, options: batchOptions) => {
       child.on('error', reject);
       child.on('close', resolve);
     });
+    console.log(`successfully converted ${path.basename(imageFile)}`)
     await fs.move(imageFile, path.join(destinationDir, path.basename(imageFile)));
     fileCount -= 1;
     console.log(`remaining files: ${fileCount}`);
