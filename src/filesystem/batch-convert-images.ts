@@ -36,7 +36,7 @@ const batchConvertImages = async (dir: string, options: batchOptions) => {
   for (const imageFile of imageFiles) {
     const imOptions = [];
     if (path.basename(imageFile).startsWith('_')) {
-      imOptions.push('-quality', '80')
+      imOptions.push('-quality', '80');
     } else if (options.quality && !Number.isNaN(Number(options.quality))) {
       imOptions.push('-quality', options.quality);
     }
@@ -57,14 +57,10 @@ const batchConvertImages = async (dir: string, options: batchOptions) => {
       child.on('error', reject);
       child.on('close', resolve);
     });
-    console.log(`successfully converted ${path.basename(imageFile)}`)
+    console.log(`successfully converted ${path.basename(imageFile)}`);
     await fs.move(imageFile, path.join(destinationDir, path.basename(imageFile)));
     fileCount -= 1;
     console.log(`remaining files: ${fileCount}`);
-  }
-  if (options.deleteOriginals) {
-    console.log(`deleting original images in ${path.basename(destinationDir)}`);
-    await fs.remove(destinationDir);
   }
   let dirCount = directories.length;
   if (!dirCount || !options.recursive) return;
@@ -72,6 +68,10 @@ const batchConvertImages = async (dir: string, options: batchOptions) => {
     await batchConvertImages(directory, options);
     dirCount -= 1;
     console.log(`remaining directories: ${dirCount}`);
+  }
+  if (options.deleteOriginals) {
+    console.log(`deleting original images`);
+    await fs.remove(path.join(dir, `_originals-${options.extension}`));
   }
 };
 
