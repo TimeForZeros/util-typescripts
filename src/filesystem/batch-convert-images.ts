@@ -52,11 +52,13 @@ const batchConvertImages = async (dir: string, options: batchOptions) => {
       `${path.basename(imageFile, options.extension)}${options.format}`,
     );
     const imArgs = [imageFile, ...imOptions, destinationPath];
+    console.time(path.basename(imageFile))
     await new Promise((resolve, reject) => {
       const child = spawn('magick', imArgs, { stdio: 'inherit' });
       child.on('error', reject);
       child.on('close', resolve);
     });
+    console.timeEnd(path.basename(imageFile));
     console.log(`successfully converted ${path.basename(imageFile)}`);
     await fs.move(imageFile, path.join(destinationDir, path.basename(imageFile)));
     fileCount -= 1;
@@ -74,6 +76,11 @@ const batchConvertImages = async (dir: string, options: batchOptions) => {
     await fs.remove(path.join(dir, `_originals-${options.extension}`));
   }
 };
+const timerWrapper = async (dir: string, options: batchOptions) => {
+  console.time('batch-convert');
+  await batchConvertImages(dir, options);
+  console.timeEnd('batch-convert')
+}
 
 program
   .command('batch-convert-images <dir>')
@@ -83,5 +90,5 @@ program
   .option('-q, --quality <quality>', 'The output quality')
   .option('-e, --extension <extension>', 'The input extension', stripDots, 'jpg')
   .option('-d, --delete-originals', 'Delete the original images after conversion', false)
-  .action(batchConvertImages)
+  .action(timerWrapper)
   .parse();
