@@ -38,6 +38,7 @@ const convert = async (sourcePath: string, outputPath: string, options: Options)
 };
 
 const sharpConvert = async (dir: string, options: Options, dest: string = '') => {
+  console.time(dir);
   console.log(`working on ${path.basename(dir)}`);
   const files = await fs.readdir(dir);
   const convertList: string[] = [];
@@ -76,23 +77,22 @@ const sharpConvert = async (dir: string, options: Options, dest: string = '') =>
     }
   }
 
-  // const queue = async.queue(
-  //   ({ sourcePath, outputPath, options }: { sourcePath: string; outputPath: string; options: Options }) =>
-  //     convert(sourcePath, outputPath, options),
-  //   2,
-  // );
-  // queue.push(
-  //   convertList.map((convertFile) => ({
-  //     sourcePath: convertFile,
-  //     outputPath: getOutputPath(convertFile, outputDir, options.format),
-  //     options,
-  //   })),
-  // );
-  // await queue.drain();
-  for (let sourcePath of convertList) {
-    await (convert(sourcePath, getOutputPath(sourcePath, outputDir, options.format), options))
-  }
+  const queue = async.queue(
+    async ({ sourcePath, outputPath, options }: { sourcePath: string; outputPath: string; options: Options }) =>
+      convert(sourcePath, outputPath, options),
+    2,
+  );
+  queue.push(
+    convertList.map((convertFile) => ({
+      sourcePath: convertFile,
+      outputPath: getOutputPath(convertFile, outputDir, options.format),
+      options,
+    })),
+  );
+  await queue.drain();
+
   console.log('done');
+  console.timeEnd(dir);
 };
 
 program
