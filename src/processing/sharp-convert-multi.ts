@@ -2,23 +2,12 @@ import path from 'path';
 import fs from 'fs-extra';
 import { Worker, MessageChannel, MessagePort, isMainThread, parentPort } from 'node:worker_threads';
 import { program } from 'commander';
+import WorkerQueue from './WorkerQueue.js';
+import type { ConvertOptions, Options } from './types.js';
 
 const workerScript = './src/processing/_sharp-convert.ts';
 
-type Options = {
-  format: string;
-  extensions: string[];
-  quality: number;
-  scalePercentage: number;
-  outputDir: string;
-  bitDepth: 8 | 10 | 12;
-};
 
-type ConvertOptions = {
-  sourcePath: string;
-  outputPath: string;
-  options: Options;
-};
 
 const convertQueue: ConvertOptions[] = [];
 
