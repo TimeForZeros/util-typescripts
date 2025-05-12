@@ -1,8 +1,9 @@
 import path from 'path';
-import sharp from 'sharp';
-import async from 'async';
 import fs from 'fs-extra';
+import { Worker, MessageChannel, MessagePort, isMainThread, parentPort } from 'node:worker_threads';
 import { program } from 'commander';
+
+const workerScript = './src/processing/_sharp-convert.ts';
 
 type Options = {
   format: string;
@@ -13,13 +14,21 @@ type Options = {
   bitDepth: 8 | 10 | 12;
 };
 
-const parseExt = (extStr: string) => extStr.split(',').filter(Boolean);
-
-const verifyDir = (dir: string) => {
-  const exists = fs.existsSync(dir);
-  if (exists) return dir;
-  throw Error(`path ${dir} does not exist`);
+type ConvertOptions = {
+  sourcePath: string;
+  outputPath: string;
+  options: Options;
 };
+
+const convertQueue: ConvertOptions[] = [];
+
+function* arrayIterator(arr: ConvertOptions[]) {
+  for (let i = 0; i < arr.length; i++) {
+    yield arr[i];
+  }
+}
+
+const parseExt = (extStr: string) => extStr.split(',').filter(Boolean);
 
 const getOutputPath = (filePath: string, outputDir: string, format: string | undefined) =>
   path.join(
@@ -27,24 +36,7 @@ const getOutputPath = (filePath: string, outputDir: string, format: string | und
     format ? path.basename(filePath).replace(path.extname(filePath), `.${format}`) : path.basename(filePath),
   );
 
-const convert = async (sourcePath: string, outputPath: string, options: Options) => {
-  console.log(`converting ${path.basename(sourcePath)}`);
-  const metadata = await sharp(sourcePath).metadata();
-  if (!metadata.width) return;
-  const isCover = path.basename(sourcePath).startsWith('_');
-  const convertOpts = {
-    quality: isCover ? 80 : options.quality,
-    bitdepth: options.bitDepth,
-  };
-  const buffer = sharp(sourcePath).clone().avif(convertOpts);
-  if (options.scalePercentage !== 0 && !isCover) {
-    buffer.resize((metadata.width * options.scalePercentage) / 100);
-  }
-  await buffer.toFile(outputPath);
-};
-
 const sharpConvert = async (dir: string, options: Options, dest: string = '') => {
-  console.time(dir);
   console.log(`working on ${path.basename(dir)}`);
   const files = await fs.readdir(dir);
   const convertList: string[] = [];
@@ -81,25 +73,53 @@ const sharpConvert = async (dir: string, options: Options, dest: string = '') =>
       await fs.ensureDir(otherDir);
       await fs.copy(filePath, getOutputPath(file, otherDir, undefined));
     }
-      console.timeEnd(path.basename(dir));
   }
-
-  const queue = async.queue(
-    async ({ sourcePath, outputPath, options }: { sourcePath: string; outputPath: string; options: Options }) =>
-      convert(sourcePath, outputPath, options),
-    2,
-  );
-  queue.push(
-    convertList.map((convertFile) => ({
+  convertList.forEach((convertFile) => {
+    convertQueue.push({
       sourcePath: convertFile,
       outputPath: getOutputPath(convertFile, outputDir, options.format),
       options,
-    })),
-  );
-  await queue.drain();
+    });
+  });
+};
 
-  console.log('done');
-  console.timeEnd(dir);
+const multiConvert = async (dir: string, options: Options) => {
+  console.time();
+  const shouldQuit = [false, false];
+  let iterator = null;
+  console.log('starting');
+  await sharpConvert(dir, options);
+  iterator = arrayIterator(convertQueue);
+  const worker1 = new Worker(workerScript);
+  const worker2 = new Worker(workerScript);
+  worker1.postMessage(JSON.stringify(iterator.next().value));
+  worker2.postMessage(JSON.stringify(iterator.next().value));
+  worker1?.on('message', (value) => {
+    if (value !== 0) return;
+    const result = iterator.next();
+    if (result.done) {
+      shouldQuit[0] = true;
+      if (shouldQuit.every(Boolean)) {
+        console.log('queue is empty');
+        console.timeEnd();
+        process.exit(0);
+      }
+    }
+    worker1.postMessage(JSON.stringify(result.value));
+  });
+  worker2?.on('message', (value) => {
+    if (value !== 0) return;
+    const result = iterator.next();
+    if (result.done) {
+      shouldQuit[1] = true;
+      if (shouldQuit.every(Boolean)) {
+        console.log('queue is empty');
+        console.timeEnd();
+        process.exit(0);
+      }
+    }
+    worker2.postMessage(JSON.stringify(result.value));
+  });
 };
 
 const getInt = (input: string) => {
@@ -108,6 +128,12 @@ const getInt = (input: string) => {
     throw Error('input requires a valid integer');
   }
   return inputNum;
+};
+
+const verifyDir = (dir: string) => {
+  const exists = fs.existsSync(dir);
+  if (exists) return dir;
+  throw Error(`path ${dir} does not exist`);
 };
 
 program
@@ -126,5 +152,5 @@ program
     'jpg',
     'jpeg',
   ])
-  .action((dir: string, options: Options) => sharpConvert(dir, options))
+  .action((dir: string, options: Options) => multiConvert(dir, options))
   .parse();
