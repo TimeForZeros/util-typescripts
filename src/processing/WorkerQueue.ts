@@ -1,17 +1,21 @@
 import { Worker, MessageChannel, MessagePort, isMainThread, parentPort } from 'node:worker_threads';
-import type { WorkerOptions } from './types.js'
-
-
+import type { WorkerOptions } from './types.js';
 
 export default class WorkerQueue {
   workers: Worker[] = [];
-  iterator: WorkerOptions["iterator"];
+  iterator: WorkerOptions['iterator'];
   constructor(opts: WorkerOptions) {
     this.iterator = opts.iterator;
     for (let i = 0; i < opts.count; i += 1) {
       const worker = new Worker(opts.workerFile, { name: `worker-${i}` });
       this.workers.push(worker);
       console.log(worker);
+    }
+  }
+
+  start() {
+    this.workers.forEach((worker) => {
+      const result = this.iterator.next();
       worker.on('message', (value) => {
         if (value !== 0) return;
         const result = this.iterator.next();
@@ -24,6 +28,6 @@ export default class WorkerQueue {
         }
         worker.postMessage(JSON.stringify(result.value));
       });
-    }
+    });
   }
 }
