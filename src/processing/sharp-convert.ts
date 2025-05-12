@@ -7,8 +7,10 @@ import { program } from 'commander';
 type Options = {
   format: string;
   extensions: string[];
-  scaleFactor: number;
+  quality: number;
+  scalePercentage: number;
   outputDir: string;
+  bitDepth: 8 | 10 | 12;
 };
 
 const parseExt = (extStr: string) => extStr.split(',').filter(Boolean);
@@ -29,15 +31,20 @@ const convert = async (sourcePath: string, outputPath: string, options: Options)
   console.log(`converting ${path.basename(sourcePath)}`);
   const metadata = await sharp(sourcePath).metadata();
   if (!metadata.width) return;
-  const buffer = sharp(sourcePath).clone().avif({ quality: 80 });
-  if (options.scaleFactor !== 0) {
-    buffer.resize(metadata.width / 2);
+  const isCover = path.basename(sourcePath).startsWith('_');
+  const convertOpts = {
+    quality: isCover ? 80 : options.quality,
+    bitdepth: options.bitDepth,
+  };
+  const buffer = sharp(sourcePath).clone().avif(convertOpts);
+  if (options.scalePercentage !== 0 && !isCover) {
+    buffer.resize((metadata.width * options.scalePercentage) / 100);
   }
-
   await buffer.toFile(outputPath);
 };
 
 const sharpConvert = async (dir: string, options: Options, dest: string = '') => {
+  console.log(options);
   console.time(dir);
   console.log(`working on ${path.basename(dir)}`);
   const files = await fs.readdir(dir);
@@ -95,11 +102,26 @@ const sharpConvert = async (dir: string, options: Options, dest: string = '') =>
   console.timeEnd(dir);
 };
 
+const getInt = (input: string) => {
+  const inputNum = parseInt(input, 10);
+  if (Number.isNaN(inputNum)) {
+    throw Error('input requires a valid integer');
+  }
+  return inputNum;
+};
+
 program
   .argument('<dir>', 'the directory to convert', verifyDir)
   .option('-f, --format <image format>', 'the format to convert the images', 'avif')
-  .option('-s, --scale-factor <scale factor>', 'number to scale the image by', parseInt, 0)
+  .option(
+    '-s, --scale-percentage <scale percentage>',
+    'number representing the percentage to scale the image by',
+    getInt,
+    0,
+  )
+  .option('-q, --quality <quality number>', 'number for quality', getInt, 80)
   .option('-o, --output-dir <dir path>', 'dir path for processed files')
+  .option('-b, --bit-depth <<8 | 10 | 12>>', 'bit depth', getInt, 8)
   .option('-e, --extensions <extension>', 'the extensions to search for, separated by a comma', parseExt, [
     'jpg',
     'jpeg',
