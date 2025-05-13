@@ -1,5 +1,5 @@
 import path from 'path';
-import sharp from 'sharp';
+import spawn from 'cross-spawn';
 import { parentPort } from 'node:worker_threads';
 
 type Options = {
@@ -12,27 +12,29 @@ type Options = {
 };
 
 const convert = async (sourcePath: string, outputPath: string, options: Options) => {
-  // if (!sourcePath || !outputPath) return;
+
   console.log(`converting ${path.basename(sourcePath)}`);
-  const metadata = await sharp(sourcePath).metadata();
-  if (!metadata.width) return;
   const isCover = path.basename(sourcePath).startsWith('_');
-  const convertOpts = {
-    quality: isCover ? 80 : options.quality,
-    bitdepth: options.bitDepth,
-  };
-  const buffer = sharp(sourcePath).clone().avif(convertOpts);
-  if (options.scalePercentage !== 0 && !isCover) {
-    buffer.resize((metadata.width * options.scalePercentage) / 100);
+  const imOptions: string[] = [];
+  if (options.quality) {
+    imOptions.push('-quality', isCover ? '90' : options.quality.toString());
   }
-  await buffer.toFile(outputPath);
+  if (options.scalePercentage && !isCover) {
+    imOptions.push('-scale', `${options.scalePercentage}%`);
+  }
+  const imArgs = [sourcePath, ...imOptions, outputPath];
+  await new Promise((resolve, reject) => {
+    const child = spawn('magick', imArgs, { stdio: 'inherit' });
+    child.on('error', reject);
+    child.on('close', resolve);
+  });
 };
 
 parentPort?.on('message', async (json: string) => {
   try {
     const { sourcePath, outputPath, options } = JSON.parse(json);
     await convert(sourcePath, outputPath, options);
-  } catch(err) {
+  } catch (err) {
     console.log(json);
     console.log(err);
   }
