@@ -2,7 +2,6 @@ import path from 'path';
 import fs from 'fs-extra';
 import { fileURLToPath } from 'node:url';
 import { availableParallelism } from 'node:os';
-import { Worker, MessageChannel, MessagePort, isMainThread, parentPort } from 'node:worker_threads';
 import { program } from 'commander';
 import WorkerQueue from './WorkerQueue.js';
 import type { ConvertOptions, Options } from './types.js';

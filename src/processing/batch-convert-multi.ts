@@ -1,7 +1,6 @@
 import path from 'path';
 import fs from 'fs-extra';
 import { fileURLToPath } from 'node:url';
-import { availableParallelism } from 'node:os';
 import { program } from 'commander';
 import WorkerQueue from './WorkerQueue.js';
 import type { ConvertOptions, Options } from './types.js';
@@ -73,7 +72,7 @@ const multiConvert = async (dir: string, options: Options) => {
   await batchConvert(dir, options);
   
   console.log('starting conversion');
-  const workerQueue = new WorkerQueue({ workerFile: workerScript, count: 4, queue: convertQueue });
+  const workerQueue = new WorkerQueue({ workerFile: workerScript, count: options.threads, queue: convertQueue });
   await workerQueue.start();
 };
 

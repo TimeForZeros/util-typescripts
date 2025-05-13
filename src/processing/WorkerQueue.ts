@@ -1,4 +1,5 @@
 import { Worker } from 'node:worker_threads';
+import { availableParallelism } from 'node:os';
 import type { WorkerOptions, ConvertOptions } from './types.js';
 
 function* arrayIterator(arr: ConvertOptions[]) {
@@ -17,7 +18,7 @@ export default class WorkerQueue {
   constructor(opts: WorkerOptions) {
     this.workerFile = opts.workerFile;
     this.iterator = arrayIterator(opts.queue);
-    this.workerCount = opts.count;
+    this.workerCount = opts.count || availableParallelism();
     this.remaining = opts.queue.length;
   }
 
@@ -30,6 +31,7 @@ export default class WorkerQueue {
       worker.postMessage(JSON.stringify(result.value));
       worker.on('message', async (value: number) => {
         this.remaining -= 1;
+        console.log(`remaining: ${this.remaining}`);
         if (value !== 0) return;
         const result = this.iterator.next();
         if (result.done) {
@@ -44,7 +46,6 @@ export default class WorkerQueue {
           console.timeEnd();
           process.exit(0);
         }
-        console.log(`remaining: ${this.remaining}`);
         worker.postMessage(JSON.stringify(result.value));
       });
     }

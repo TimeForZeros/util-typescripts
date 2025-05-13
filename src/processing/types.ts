@@ -5,6 +5,7 @@ export type Options = {
   scalePercentage: number;
   outputDir: string;
   bitDepth: 8 | 10 | 12;
+  threads: number;
 };
 
 export type ConvertOptions = {
