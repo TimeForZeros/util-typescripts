@@ -78,7 +78,9 @@ const multiConvert = async (dir: string, options: Options) => {
   await sharpConvert(dir, options);
   iterator = arrayIterator(convertQueue);
 
+  console.log('starting worker');
   const workerQueue = new WorkerQueue({ workerFile: workerScript, count: 2, iterator });
+  await workerQueue.start();
 
   // const worker1 = new Worker(workerScript);
   // const worker2 = new Worker(workerScript);
