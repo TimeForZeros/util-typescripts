@@ -16,5 +16,5 @@ export type ConvertOptions = {
 export type WorkerOptions = {
   count: number;
   workerFile: string;
-  iterator: Generator<ConvertOptions, void, unknown>;
+  queue: ConvertOptions[];
 };

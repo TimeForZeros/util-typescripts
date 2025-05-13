@@ -12,12 +12,6 @@ const workerScript = path.join(path.dirname(__filename), `_batch-convert${path.e
 
 const convertQueue: ConvertOptions[] = [];
 
-function* arrayIterator(arr: ConvertOptions[]) {
-  for (let i = 0; i < arr.length; i++) {
-    yield arr[i];
-  }
-}
-
 const parseExt = (extStr: string) => extStr.split(',').filter(Boolean);
 
 const getOutputPath = (filePath: string, outputDir: string, format: string | undefined) =>
@@ -75,11 +69,11 @@ const batchConvert = async (dir: string, options: Options, dest: string = '') =>
 
 const multiConvert = async (dir: string, options: Options) => {
   console.time();
-  let iterator = null;
-  console.log('starting');
+  console.log('starting search');
   await batchConvert(dir, options);
-  iterator = arrayIterator(convertQueue);
-  const workerQueue = new WorkerQueue({ workerFile: workerScript, count: 4, iterator });
+  
+  console.log('starting conversion');
+  const workerQueue = new WorkerQueue({ workerFile: workerScript, count: 4, queue: convertQueue });
   await workerQueue.start();
 };
 
@@ -109,6 +103,7 @@ program
   .option('-q, --quality <quality number>', 'number for quality', getInt, 80)
   .option('-o, --output-dir <dir path>', 'dir path for processed files')
   .option('-b, --bit-depth <<8 | 10 | 12>>', 'bit depth', getInt, 8)
+  .option('-t, --threads <number>', 'number of worker threads to use', getInt, 0)
   .option('-e, --extensions <extension>', 'the extensions to search for, separated by a comma', parseExt, [
     'jpg',
     'jpeg',

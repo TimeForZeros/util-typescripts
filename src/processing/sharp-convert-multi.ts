@@ -76,11 +76,9 @@ const sharpConvert = async (dir: string, options: Options, dest: string = '') =>
 
 const multiConvert = async (dir: string, options: Options) => {
   console.time();
-  let iterator = null;
   console.log('starting');
   await sharpConvert(dir, options);
-  iterator = arrayIterator(convertQueue);
-  const workerQueue = new WorkerQueue({ workerFile: workerScript, count: availableParallelism(), iterator });
+  const workerQueue = new WorkerQueue({ workerFile: workerScript, count: availableParallelism(), queue: convertQueue });
   await workerQueue.start();
 };
 

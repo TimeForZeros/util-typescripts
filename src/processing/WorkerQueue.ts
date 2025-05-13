@@ -1,25 +1,35 @@
 import { Worker } from 'node:worker_threads';
-import type { WorkerOptions } from './types.js';
+import type { WorkerOptions, ConvertOptions } from './types.js';
+
+function* arrayIterator(arr: ConvertOptions[]) {
+  for (let i = 0; i < arr.length; i++) {
+    yield arr[i];
+  }
+}
 
 export default class WorkerQueue {
   workers: Worker[] = [];
-  iterator: WorkerOptions['iterator'];
+  iterator: Generator<ConvertOptions, void, unknown>;
   workerCount: number;
   workerFile: string;
+  remaining: number;
+
   constructor(opts: WorkerOptions) {
     this.workerFile = opts.workerFile;
-    this.iterator = opts.iterator;
+    this.iterator = arrayIterator(opts.queue);
     this.workerCount = opts.count;
+    this.remaining = opts.queue.length;
   }
 
   start() {
     for (let i = 0; i < this.workerCount; i += 1) {
-      const result = this.iterator.next()
+      const result = this.iterator.next();
       if (!result.value || result.done) break;
       const worker = new Worker(this.workerFile, { name: `worker-${i}` });
       this.workers.push(worker);
       worker.postMessage(JSON.stringify(result.value));
       worker.on('message', async (value: number) => {
+        this.remaining -= 1;
         if (value !== 0) return;
         const result = this.iterator.next();
         if (result.done) {
@@ -34,6 +44,7 @@ export default class WorkerQueue {
           console.timeEnd();
           process.exit(0);
         }
+        console.log(`remaining: ${this.remaining}`);
         worker.postMessage(JSON.stringify(result.value));
       });
     }
