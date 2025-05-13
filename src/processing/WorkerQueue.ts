@@ -14,11 +14,11 @@ export default class WorkerQueue {
 
   start() {
     for (let i = 0; i < this.workerCount; i += 1) {
-      const result = this.iterator.next();
+      const result = this.iterator.next()
       if (!result.value || result.done) break;
       const worker = new Worker(this.workerFile, { name: `worker-${i}` });
       this.workers.push(worker);
-      worker.postMessage(JSON.stringify(result));
+      worker.postMessage(JSON.stringify(result.value));
       worker.on('message', async (value: number) => {
         if (value !== 0) return;
         const result = this.iterator.next();

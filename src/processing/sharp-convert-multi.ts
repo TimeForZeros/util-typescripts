@@ -1,5 +1,6 @@
 import path from 'path';
 import fs from 'fs-extra';
+import { availableParallelism } from 'node:os';
 import { Worker, MessageChannel, MessagePort, isMainThread, parentPort } from 'node:worker_threads';
 import { program } from 'commander';
 import WorkerQueue from './WorkerQueue.js';
@@ -72,46 +73,12 @@ const sharpConvert = async (dir: string, options: Options, dest: string = '') =>
 
 const multiConvert = async (dir: string, options: Options) => {
   console.time();
-  const shouldQuit = [false, false];
   let iterator = null;
   console.log('starting');
   await sharpConvert(dir, options);
   iterator = arrayIterator(convertQueue);
-
-  console.log('starting worker');
-  const workerQueue = new WorkerQueue({ workerFile: workerScript, count: 2, iterator });
+  const workerQueue = new WorkerQueue({ workerFile: workerScript, count: availableParallelism(), iterator });
   await workerQueue.start();
-
-  // const worker1 = new Worker(workerScript);
-  // const worker2 = new Worker(workerScript);
-  // worker1.postMessage(JSON.stringify(iterator.next().value));
-  // worker2.postMessage(JSON.stringify(iterator.next().value));
-  // worker1?.on('message', (value) => {
-  //   if (value !== 0) return;
-  //   const result = iterator.next();
-  //   if (result.done) {
-  //     shouldQuit[0] = true;
-  //     if (shouldQuit.every(Boolean)) {
-  //       console.log('queue is empty');
-  //       console.timeEnd();
-  //       process.exit(0);
-  //     }
-  //   }
-  //   worker1.postMessage(JSON.stringify(result.value));
-  // });
-  // worker2?.on('message', (value) => {
-  //   if (value !== 0) return;
-  //   const result = iterator.next();
-  //   if (result.done) {
-  //     shouldQuit[1] = true;
-  //     if (shouldQuit.every(Boolean)) {
-  //       console.log('queue is empty');
-  //       console.timeEnd();
-  //       process.exit(0);
-  //     }
-  //   }
-  //   worker2.postMessage(JSON.stringify(result.value));
-  // });
 };
 
 const getInt = (input: string) => {

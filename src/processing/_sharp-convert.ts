@@ -15,6 +15,7 @@ type Options = {
 };
 
 const convert = async (sourcePath: string, outputPath: string, options: Options) => {
+  // if (!sourcePath || !outputPath) return;
   console.log(`converting ${path.basename(sourcePath)}`);
   const metadata = await sharp(sourcePath).metadata();
   if (!metadata.width) return;
