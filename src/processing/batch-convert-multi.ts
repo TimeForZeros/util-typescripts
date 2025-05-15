@@ -99,6 +99,7 @@ program
     getInt,
     0,
   )
+  .option('-a, --auto', 'auto quality and scale', false)
   .option('-q, --quality <quality number>', 'number for quality', getInt, 80)
   .option('-o, --output-dir <dir path>', 'dir path for processed files')
   .option('-b, --bit-depth <<8 | 10 | 12>>', 'bit depth', getInt, 8)
