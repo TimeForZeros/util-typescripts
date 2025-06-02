@@ -6,6 +6,6 @@ const program = new Command();
 program
   .command('dir <dir>')
   .action(async (dir: string) => {
-    await findRedundantNest(dir, false);
+    await findRedundantNest(dir, true);
   })
   .parse();
