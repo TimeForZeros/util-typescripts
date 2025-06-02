@@ -132,6 +132,17 @@ const findDuplicateNestedDir = async (dir: string, flatten: boolean = false) => 
     }
   }
 };
+const findRedundantNest = async (dir: string, flatten: boolean = false) => {
+  const filePaths = await getAllFilePaths(dir);
+  for (const filePath of filePaths) {
+    const fileName = path.basename(filePath);
+    const dirPath = path.dirname(filePath);
+    if (path.basename(filePath, path.extname(fileName)) !== path.basename(dirPath)) continue; // dir and filename are the same
+    console.log(`found redundand nest: ${dirPath}`);
+    if (!flatten) continue;
+    await moveContentsToParent(dirPath);
+  }
+};
 
 const generateHashFromFile = async (filePath: string): Promise<string> =>
   new Promise((resolve, reject) => {
@@ -169,4 +180,5 @@ export {
   moveFile,
   removeEmptyDirs,
   findDuplicateNestedDir,
+  findRedundantNest
 };
