@@ -20,10 +20,10 @@ const stripCharsSearch = async (dir: string) => {
   const contents = await fs.readdir(dir);
   for (let i = 0; i < contents.length; i += 1) {
     const content = contents[i];
-    // if (content === '.DS_Store') {
-    //   console.log('removing ds store');
-    //   await fs.rm(path.join(dir, '.DS_Store'));
-    // }
+    if (content === '.DS_Store') {
+      console.log('removing ds store');
+      await fs.remove(path.join(dir, '.DS_Store'));
+    }
     const contentPath = path.join(dir, content);
     const stat = await fs.stat(contentPath);
     if (stat.isDirectory()) {
