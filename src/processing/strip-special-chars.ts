@@ -23,6 +23,7 @@ const stripCharsSearch = async (dir: string) => {
     if (content === '.DS_Store') {
       console.log('removing ds store');
       await fs.remove(path.join(dir, '.DS_Store'));
+      continue;
     }
     const contentPath = path.join(dir, content);
     const stat = await fs.stat(contentPath);
