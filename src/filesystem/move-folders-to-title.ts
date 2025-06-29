@@ -15,23 +15,35 @@ program
   .command('dir <directory>')
   .option('-s, --split-text <TEXT>', 'the text to split filenames by', ' - ')
   .option('-i, --index <INDEX>', 'the index where the title lies', parseInteger)
+  .option('-n, --name-index <NAME INDEX>', 'the name of the moved directory', parseInteger)
   .option('--dry-run', 'dry run', false)
   .action(
-    async (dir: string, { splitText, index = 0, dryRun }: { splitText: string; index: number; dryRun: boolean }) => {
+    async (
+      dir: string,
+      {
+        splitText,
+        index = 0,
+        nameIndex,
+        dryRun,
+      }: { splitText: string; index: number; nameIndex: number; dryRun: boolean },
+    ) => {
       console.log('started');
       await Promise.allSettled(
         (
           await fs.readdir(dir)
         ).map(async (content) => {
           if (!(await fs.stat(path.join(dir, content))).isDirectory()) return;
-          const nameParts = content.split(' - ');
+          const nameParts = content.split(splitText);
           if (nameParts.length < 2) return;
-          if (!nameParts[1].length) return;
-          const destDir = path.join(dir, nameParts[1]);
-          console.log(`moving ${content}`);
+          if (!nameParts[index].length) return;
+          const destDir = path.join(dir, nameParts[index]);
+          const destName = Number.isInteger(nameIndex) && nameParts[nameIndex]?.length ? nameParts[nameIndex] : content;
+          const destPath = path.join(destDir, destName);
+          console.log(`moving ${content} to ${destPath}`);
+          console.log(destName);
           if (dryRun) return;
           await fs.ensureDir(destDir);
-          await fs.move(path.join(dir, content), path.join(destDir, content));
+          await fs.move(path.join(dir, content), destPath);
         }),
       );
       console.log('done');
