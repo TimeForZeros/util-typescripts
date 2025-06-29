@@ -91,7 +91,7 @@ const flattenDir = async (dir: string, cleanup: boolean): Promise<void> => {
     const newPath = path.join(dir, path.basename(file));
     if (file !== newPath) {
       console.log(`Moving ${file} to ${newPath}`);
-      await fs.move(file, newPath);
+      await moveFile(file, newPath);
     }
   }
   if (cleanup) await removeEmptyDirs(dir);
