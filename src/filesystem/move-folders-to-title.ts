@@ -1,6 +1,7 @@
 import path from 'path';
 import fs from 'fs-extra';
 import { program } from 'commander';
+import { moveFile } from './lib/index.js';
 
 const parseInteger = (index: string) => {
   const int = parseInt(index);
@@ -40,10 +41,9 @@ program
           const destName = Number.isInteger(nameIndex) && nameParts[nameIndex]?.length ? nameParts[nameIndex] : content;
           const destPath = path.join(destDir, destName);
           console.log(`moving ${content} to ${destPath}`);
-          console.log(destName);
           if (dryRun) return;
           await fs.ensureDir(destDir);
-          await fs.move(path.join(dir, content), destPath);
+          await moveFile(path.join(dir, content), destPath);
         }),
       );
       console.log('done');
