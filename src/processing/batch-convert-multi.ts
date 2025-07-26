@@ -107,6 +107,7 @@ program
   .option('-e, --extensions <extension>', 'the extensions to search for, separated by a comma', parseExt, [
     'jpg',
     'jpeg',
+    'png'
   ])
   .action((dir: string, options: Options) => multiConvert(dir, options))
   .parse();
