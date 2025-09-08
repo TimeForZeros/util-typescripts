@@ -25,7 +25,6 @@ const findAndRename = async (dir: string, options: Options) => {
       const ext = path.extname(content);
       const newName = path.basename(content, ext).replaceAll(options.pattern, options.replace);
       const newPath = path.join(dir, `${newName}${ext}`);
-      console.log(newPath);
       if (options.dryRun) continue;
       promiseArr.push(fs.rename(contentPath, path.join(dir, newName)))
     }
@@ -43,7 +42,7 @@ new Command()
   .command('dir <dir>')
   .requiredOption('-p, --pattern <string>', 'search pattern', '')
   .option('--dry-run', 'dry run', false)
-  .option('--replace <string>')
+  .option('--replace <string>', 'the string to replace pattern with', '')
   .option('-r, --recursive', 'recurse through directories', false)
   .action(findAndRename)
   .parse();

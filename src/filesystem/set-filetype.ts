@@ -30,8 +30,12 @@ const renameFileExtension = async (filePath: string, dryRun: boolean) => {
   if (dryRun) return;
   try {
     await moveFile(filePath, newPath);
-  } catch (err: any) {
-    console.error(err.message);
+  } catch (err) {
+    if (err instanceof Error) {
+      console.error(err.message);
+    } else {
+      console.error('Unknown Error Occurred');
+    }
   }
 };
 
