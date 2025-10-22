@@ -20,6 +20,7 @@ const VIDEO_EXTENSIONS = [
   '.webm',
   '.mpg',
   '.ts',
+  '.3gp'
 ];
 const AUDIO_EXTENSIONS = ['.mp3', '.wav', '.flac', '.aac', '.ogg', '.wma'];
 const IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp'];
